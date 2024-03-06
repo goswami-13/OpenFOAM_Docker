@@ -1,0 +1,43 @@
+# ---------------------------------*-sh-*------------------------------------
+# Copyright (C) 2021-2022 OpenCFD Ltd.
+# SPDX-License-Identifier: (GPL-3.0+)
+#
+# Add default (tutorials etc) layer onto the openfoam '-dev' (Ubuntu) image.
+#
+# Example
+#     docker build -f openfoam-default.Dockerfile .
+#     docker build --build-arg FOAM_VERSION=2306
+#         -t opencfd/openfoam-default:2306 ...
+#
+# ---------------------------------------------------------------------------
+ARG FOAM_VERSION=2312
+
+FROM opencfd/openfoam-dev:${FOAM_VERSION}
+ARG FOAM_VERSION
+ARG PACKAGE=openfoam${FOAM_VERSION}-default
+ARG DEBIAN_FRONTEND=noninteractive
+
+SHELL ["/bin/bash", "-c"]
+
+RUN apt-get update \
+ && apt-get -y install --no-install-recommends curl ca-certificates \
+ && curl -fsSL https://dl.openfoam.com/add-debian-repo.sh | bash \
+ && apt-get update \
+ && apt-get -y install --no-install-recommends ${PACKAGE}
+
+WORKDIR /usr/lib/openfoam/openfoam2312
+
+RUN apt-get -y install --no-install-recommends git python3-dev wget vim less && \
+ cd /usr/lib/openfoam/openfoam2312 && \
+ source etc/config.sh/petsc && \
+ rm --force $WM_THIRD_PARTY_DIR && \
+ git clone https://develop.openfoam.com/Development/ThirdParty-common
+
+RUN rm -rf ThirdParty && \
+ cp -r ThirdParty-common ThirdParty && \
+ cd ThirdParty && \
+ wget https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.19.2.tar.gz && \
+ tar xzf petsc-lite-3.19.2.tar.gz
+
+# ---------------------------------------------------------------------------
+
