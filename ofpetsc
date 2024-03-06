@@ -27,6 +27,9 @@ RUN apt-get update \
 
 WORKDIR /usr/lib/openfoam/openfoam2312
 
+RUN useradd --user-group --create-home --shell /bin/bash foam && \
+ echo "foam ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
 RUN apt-get -y install --no-install-recommends git python3-dev wget vim less && \
  cd /usr/lib/openfoam/openfoam2312 && \
  source etc/config.sh/petsc && \
@@ -39,5 +42,7 @@ RUN rm -rf ThirdParty && \
  wget https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.19.2.tar.gz && \
  tar xzf petsc-lite-3.19.2.tar.gz
 
-# ---------------------------------------------------------------------------
+# set the default container user to foam
+USER foam
 
+# ---------------------------------------------------------------------------
