@@ -20,29 +20,21 @@ ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update \
- && apt-get -y install --no-install-recommends curl ca-certificates \
- && curl -fsSL https://dl.openfoam.com/add-debian-repo.sh | bash \
- && apt-get update \
- && apt-get -y install --no-install-recommends ${PACKAGE}
-
-WORKDIR /usr/lib/openfoam/openfoam2312
-
-RUN useradd --user-group --create-home --shell /bin/bash foam && \
- echo "foam ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-RUN apt-get -y install --no-install-recommends git python3-dev wget vim less && \
- cd /usr/lib/openfoam/openfoam2312 && \
- source etc/config.sh/petsc && \
- rm --force $WM_THIRD_PARTY_DIR && \
- git clone https://develop.openfoam.com/Development/ThirdParty-common
-
-RUN rm -rf ThirdParty && \
- cp -r ThirdParty-common ThirdParty && \
- cd ThirdParty && \
- wget https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.19.2.tar.gz && \
- tar xzf petsc-lite-3.19.2.tar.gz
-
-# set the default container user to foam
-USER foam
+ && apt-get -y install --no-install-recommends git python3-dev wget vim less \
+ && apt-get -y install --no-install-recommends ${PACKAGE} \
+ && rm -rf /var/lib/apt/lists/* \
+ && cd /usr/lib/openfoam/openfoam2312/ \
+ && source etc/bashrc \
+ && source etc/config.sh/petsc \
+ && rm --force $WM_THIRD_PARTY_DIR \
+ && git clone https://develop.openfoam.com/Development/ThirdParty-common $WM_THIRD_PARTY_DIR \
+ && cd $WM_THIRD_PARTY_DIR \
+ && wget https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/$petsc_version.tar.gz \
+ && tar xzf $petsc_version.tar.gz \
+ && ./makePETSC -- --download-f2cblaslapack=1 \
+ && git clone https://develop.openfoam.com/modules/external-solver $WM_THIRD_PARTY_DIR/external-solver \
+ && cd $WM_THIRD_PARTY_DIR/external-solver \
+ && ./Allwmake -j 1>stdout.log 2>stderr.log \
+ && echo "eval $(foamEtcFile -sh -config petsc -- -force)" >> ~/.bashrc
 
 # ---------------------------------------------------------------------------
